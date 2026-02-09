@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>X-ACADEMY // CYBER RANKING</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS BASE & FONDO CRT --- */
+        body { 
+            background: transparent; 
+            margin: 0; padding: 20px; /* Un poco más de margen para el brillo */
+            font-family: 'Press Start 2P', cursive; 
+            overflow: hidden; 
+        }
+
+        /* CONTENEDOR PRINCIPAL CON NEÓN */
+        .rank-container {
+            width: 260px;
+            background: rgba(0, 5, 12, 0.95);
+            border: 2px solid #00e0ff;
+            /* Animación de resplandor pulsante */
+            box-shadow: 0 0 15px rgba(0, 224, 255, 0.4), inset 0 0 20px rgba(0, 224, 255, 0.1);
+            padding: 15px 10px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            animation: borderPulse 4s infinite alternate;
+        }
+
+        /* EFECTO SCANLINES (Fondo rayado retro) */
+        .rank-container::before {
+            content: "";
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* CABECERA ANIMADA */
+        .rank-header {
+            text-align: center;
+            font-size: 11px;
+            color: #00e0ff;
+            border-bottom: 3px double #005577;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px #00e0ff;
+            animation: textGlitch 3s infinite alternate;
+        }
+
+        /* --- FILAS DE JUGADORES --- */
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            margin-bottom: 8px;
+            padding: 10px 8px;
+            font-size: 9px;
+            border-left: 3px solid #005577;
+            position: relative;
+            z-index: 2; /* Encima de las scanlines */
+            
+            /* Preparar animación de entrada */
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideIn 0.5s forwards ease-out;
+        }
+
+        /* COLUMNAS */
+        .p-rank { width: 25px; text-align: center; font-size: 12px; text-shadow: 0 0 5px currentColor; }
+        .p-name { flex-grow: 1; margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd; }
+        .p-score { color: #00ff41; text-shadow: 0 0 5px #00ff41; }
+
+        /* --- ESTILOS TOP 3 --- */
+        
+        /* TOP 1: DORADO + EFECTO BRILLO */
+        .rank-1 { 
+            border-left-color: #ffcc00; 
+            background: linear-gradient(90deg, rgba(255, 204, 0, 0.15), transparent);
+            overflow: hidden; /* Necesario para el brillo */
+        }
+        .rank-1 .p-rank { color: #ffcc00; animation: iconPulse 1s infinite alternate; }
+        
+        /* Animación de brillo pasando por el Top 1 */
+        .rank-1::after {
+            content: '';
+            position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: skewX(-20deg);
+            animation: shine 3s infinite;
+        }
+        
+        /* TOP 2: PLATEADO */
+        .rank-2 { border-left-color: #c0c0c0; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), transparent); }
+        .rank-2 .p-rank { color: #c0c0c0; }
+        
+        /* TOP 3: BRONCE */
+        .rank-3 { border-left-color: #cd7f32; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), transparent); }
+        .rank-3 .p-rank { color: #cd7f32; }
+
+        /* LOADING */
+        #loading { text-align: center; font-size: 8px; color: #00e0ff; margin-top: 20px; animation: pulse 1s infinite; }
+
+        /* --- KEYFRAMES DE ANIMACIÓN --- */
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+        @keyframes borderPulse { 0% { box-shadow: 0 0 15px rgba(0, 224, 255, 0.3); border-color: #00e0ff; } 100% { box-shadow: 0 0 25px rgba(0, 224, 255, 0.6); border-color: #80f0ff; } }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 150%; } 100% { left: 150%; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        @keyframes textGlitch { 0% { text-shadow: 0 0 5px #00e0ff; color: #00e0ff; } 100% { text-shadow: 0 0 10px #80f0ff; color: #80f0ff; } }
+        @keyframes iconPulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="rank-container">
+        <div class="rank-header">TOP HUNTERS</div>
+        <div id="ranking-list">
+            </div>
+        <div id="loading">ESCANENDO RED...</div>
+    </div>
+
+<script>
+    // TU URL DE SCRIPT (V14)
+    const API = "https://script.google.com/macros/s/AKfycbyWz_c4Wkxrnjy4sp0MM4GT40k2hNPfpcV9atbjTYqBdAgEAzP_ehUy4h7IUtammeSHjg/exec";
+
+    // Actualizar cada 15 segundos (un poco más lento para apreciar las animaciones)
+    setInterval(actualizarRanking, 15000);
+    actualizarRanking();
+
+    function actualizarRanking() {
+        fetch(API + "?accion=ranking")
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === "success") {
+                document.getElementById('loading').style.display = 'none';
+                const lista = document.getElementById('ranking-list');
+                // Limpiamos para reiniciar la animación de entrada
+                lista.innerHTML = "";
+
+                data.data.forEach((user, index) => {
+                    const rank = index + 1;
+                    const cssClass = rank <= 3 ? `rank-${rank}` : '';
+                    
+                    let icon = `#${rank}`;
+                    if(rank===1) icon = "👑";
+                    if(rank===2) icon = "🥈";
+                    if(rank===3) icon = "🥉";
+
+                    // Calculamos un pequeño retraso para que entren en cascada (0s, 0.1s, 0.2s...)
+                    const delay = index * 0.15;
+
+                    const html = `
+                        <div class="player-row ${cssClass}" style="animation-delay: ${delay}s">
+                            <div class="p-rank">${icon}</div>
+                            <div class="p-name">${user.nombre}</div>
+                            <div class="p-score">${user.puntos}</div>
+                        </div>
+                    `;
+                    lista.innerHTML += html;
+                });
+            }
+        })
+        .catch(e => console.log("Error ranking..."));
+    }
+</script>
+
+</body>
+</html>

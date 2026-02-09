@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>X-ACADEMY // VERSUS OVERLAY</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body { 
+            background-color: transparent; 
+            margin: 0; padding: 0; overflow: hidden;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+        }
+
+        #vs-container {
+            display: none; 
+            position: fixed;
+            bottom: 50px; left: 50%; transform: translateX(-50%);
+            width: 800px;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        /* ANIMACIONES DE ENTRADA/SALIDA */
+        .fade-in { animation: slideUp 0.5s ease-out forwards; }
+        .fade-out { animation: slideDown 0.5s ease-in forwards; }
+
+        .bet-title {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #00e0ff;
+            color: #ffcc00;
+            padding: 10px 20px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px #000;
+            display: inline-block;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 224, 255, 0.3);
+            max-width: 90%;
+        }
+
+        .bars-wrapper { display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+
+        .option-box {
+            width: 300px;
+            background: rgba(0, 10, 20, 0.9);
+            border: 3px solid #555;
+            position: relative;
+            padding: 10px;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+
+        .opt-a { border-color: #00e0ff; }
+        .opt-b { border-color: #ff4444; }
+
+        .opt-name { font-size: 12px; text-transform: uppercase; height: 15px; overflow: hidden; }
+        .opt-total { font-size: 10px; color: #aaa; margin-top: auto; padding-top: 5px; }
+
+        .winner-badge {
+            background: #ffcc00; color: #000;
+            padding: 4px 10px;
+            font-size: 8px;
+            display: none;
+            margin: 5px auto;
+            animation: bounce 0.5s infinite alternate;
+            border: 2px solid #fff;
+            width: fit-content;
+        }
+
+        .life-bar-container {
+            height: 18px;
+            background: #000;
+            margin-top: 5px;
+            position: relative;
+            border: 1px solid #fff;
+            flex-grow: 1;
+        }
+        .life-fill { height: 100%; width: 50%; transition: width 0.5s ease-out; }
+        .fill-a { background: linear-gradient(to bottom, #00ffff, #0088aa); box-shadow: 0 0 8px #00ffff; }
+        .fill-b { background: linear-gradient(to bottom, #ff5555, #aa0000); box-shadow: 0 0 8px #ff5555; }
+
+        .locked-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: repeating-linear-gradient(45deg, rgba(0,0,0,0.5), rgba(0,0,0,0.5) 10px, rgba(255,200,0,0.2) 10px, rgba(255,200,0,0.2) 20px);
+            display: none; pointer-events: none; z-index: 5;
+        }
+        .loser-dim { opacity: 0.4; filter: grayscale(0.8); }
+
+        @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        @keyframes slideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100%); opacity: 0; } }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="vs-container">
+        <div class="bet-title" id="overlay-title">...</div>
+        <div class="bars-wrapper">
+            <div class="option-box opt-a" id="box-a">
+                <div class="opt-name" id="name-a">OPCIÓN A</div>
+                <div class="winner-badge" id="win-a">★ WINNER ★</div>
+                <div class="life-bar-container"><div class="life-fill fill-a" id="bar-a" style="width: 50%;"></div></div>
+                <div class="opt-total"><span id="total-a">0</span> PTS</div>
+                <div class="locked-overlay" id="lock-a"></div>
+            </div>
+            <div style="font-size: 24px; color: #fff; font-style: italic; align-self: center;">VS</div>
+            <div class="option-box opt-b" id="box-b">
+                <div class="opt-name" id="name-b">OPCIÓN B</div>
+                <div class="winner-badge" id="win-b">★ WINNER ★</div>
+                <div class="life-bar-container"><div style="display:flex; justify-content:flex-end; height:100%;"><div class="life-fill fill-b" id="bar-b" style="width: 50%;"></div></div></div>
+                <div class="opt-total"><span id="total-b">0</span> PTS</div>
+                <div class="locked-overlay" id="lock-b"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // URL DEL SCRIPT V13/V14
+    const API = "https://script.google.com/macros/s/AKfycbyWz_c4Wkxrnjy4sp0MM4GT40k2hNPfpcV9atbjTYqBdAgEAzP_ehUy4h7IUtammeSHjg/exec";
+
+    setInterval(actualizarOverlay, 2000); 
+    
+    let yaCelebre = false; 
+    let currentId = null;      // Para detectar nuevas apuestas
+    let timeOutHide = null;    // El temporizador de 15s
+    let forceHide = false;     // Estado de ocultamiento
+
+    function actualizarOverlay() {
+        fetch(API + "?accion=estado_apuesta")
+        .then(response => response.json())
+        .then(data => {
+            if(data.status !== "success") return;
+
+            const container = document.getElementById('vs-container');
+            const title = document.getElementById('overlay-title');
+            
+            const boxA = document.getElementById('box-a'); const nameA = document.getElementById('name-a'); const barA = document.getElementById('bar-a'); const totalA = document.getElementById('total-a'); const winA = document.getElementById('win-a'); const lockA = document.getElementById('lock-a');
+            const boxB = document.getElementById('box-b'); const nameB = document.getElementById('name-b'); const barB = document.getElementById('bar-b'); const totalB = document.getElementById('total-b'); const winB = document.getElementById('win-b'); const lockB = document.getElementById('lock-b');
+
+            // --- 1. DETECCIÓN DE NUEVA APUESTA ---
+            // Si el ID cambia, reseteamos todo y mostramos el overlay de nuevo
+            if (data.id !== currentId) {
+                currentId = data.id;
+                forceHide = false;
+                yaCelebre = false;
+                clearTimeout(timeOutHide);
+                timeOutHide = null;
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+            }
+
+            // --- 2. GESTIÓN DE AUTO-OCULTAR (15s) ---
+            // Si hay un resultado final y aún no hemos iniciado el timer...
+            if (data.estado === "CERRADA" && data.ultimoResultado && !timeOutHide && !forceHide) {
+                timeOutHide = setTimeout(() => {
+                    forceHide = true; // Activar bandera de ocultar
+                    container.classList.remove('fade-in');
+                    container.classList.add('fade-out'); // Animación de salida
+                }, 15000); // 15 Segundos
+            }
+
+            // --- 3. APLICAR VISIBILIDAD ---
+            if (forceHide) {
+                // Si pasaron los 15s, mantener oculto (pero no display:none para permitir animaciones si hiciera falta)
+                container.style.opacity = "0"; 
+            } else if (data.estado === "CERRADA" && !data.ultimoResultado) {
+                // Si el admin limpió todo, ocultar inmediatamente
+                container.style.display = "none";
+            } else {
+                // Mostrar normalmente
+                container.style.display = "block";
+                container.style.opacity = "1";
+            }
+
+            // Si está oculto, no gastamos recursos actualizando textos
+            if(forceHide || container.style.display === "none") return;
+
+            // --- 4. ACTUALIZAR DATOS VISUALES ---
+            title.innerText = data.titulo; nameA.innerText = data.opA; nameB.innerText = data.opB; totalA.innerText = data.totalA; totalB.innerText = data.totalB;
+
+            let total = data.totalA + data.totalB;
+            let pctA = 50, pctB = 50;
+            if (total > 0) { pctA = (data.totalA / total) * 100; pctB = (data.totalB / total) * 100; }
+            barA.style.width = pctA + "%"; barB.style.width = pctB + "%";
+
+            // Resetear estilos temporales
+            winA.style.display = "none"; winB.style.display = "none";
+            lockA.style.display = "none"; lockB.style.display = "none";
+            boxA.classList.remove("loser-dim"); boxB.classList.remove("loser-dim");
+            title.style.borderColor = "#00e0ff"; title.style.color = "#ffcc00";
+
+            if (data.estado === "BLOQUEADA") {
+                lockA.style.display = "block"; lockB.style.display = "block";
+                title.innerText = "🔒 APUESTAS CERRADAS 🔒"; title.style.borderColor = "#ffcc00";
+            } else if (data.estado === "CERRADA" && data.ultimoResultado) {
+                if (data.ultimoResultado === "A") {
+                    winA.style.display = "block"; boxB.classList.add("loser-dim");
+                    if(!yaCelebre) { dispararConfeti(); yaCelebre = true; }
+                } else if (data.ultimoResultado === "B") {
+                    winB.style.display = "block"; boxA.classList.add("loser-dim");
+                    if(!yaCelebre) { dispararConfeti(); yaCelebre = true; }
+                } else if (data.ultimoResultado === "ANULADA") {
+                    title.innerText = "⚠ APUESTA ANULADA ⚠"; title.style.borderColor = "#ff4444"; title.style.color = "#ff4444";
+                }
+            }
+        })
+        .catch(e => console.log("Sync..."));
+    }
+
+    function dispararConfeti() {
+        var duration = 2 * 1000;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999, gravity: 0.8 };
+        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) { return clearInterval(interval); }
+            var particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: 0.1, y: 0.8 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: 0.9, y: 0.8 } }));
+        }, 250);
+    }
+</script>
+
+</body>
+</html>

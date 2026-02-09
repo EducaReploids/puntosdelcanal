@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>X-ACADEMY // ADMIN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050508; --panel: #11141c; --blue: #00f3ff; --red: #ff2a2a; --green: #00ff41; --yellow: #ffcc00; }
+        body { background: var(--bg); color: #e0e0e0; font-family: 'Share Tech Mono', monospace; margin: 0; padding: 20px; min-height: 100vh; }
+        
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: #111; border: 2px solid var(--blue); padding: 30px; text-align: center; max-width: 300px; box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
+        
+        #dashboard-content { display: none; max-width: 900px; margin: 0 auto; display: grid; gap: 20px; }
+        
+        input { width: 100%; background: #0b0c15; border: 1px solid #444; color: #fff; padding: 12px; font-family: inherit; margin-bottom: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; font-family: 'Press Start 2P'; font-size: 10px; border: none; cursor: pointer; color: #fff; margin-bottom: 5px; }
+        
+        .btn-login { background: var(--blue); color: #000; }
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card { background: var(--panel); border: 1px solid #333; padding: 20px; text-align: center; }
+        .card-val { font-size: 36px; font-weight: bold; display: block; margin: 10px 0; }
+        
+        .control-panel { background: var(--panel); border: 1px solid #333; padding: 20px; }
+        .btn-start { background: linear-gradient(135deg, #040 0%, #080 100%); }
+        .btn-lock { background: linear-gradient(135deg, #c90 0%, #fc0 100%); color: #000; box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-wa { border: 1px solid var(--blue); color: var(--blue); background: rgba(0,243,255,0.1); }
+        .btn-wb { border: 1px solid var(--red); color: var(--red); background: rgba(255,42,42,0.1); }
+        .btn-abort { background: #300; color: #f55; border: 1px dashed #f55; margin-top: 15px; }
+        
+        @media (max-width: 600px) { .monitor-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div class="login-box">
+        <div style="font-family:'Press Start 2P'; color:var(--blue); font-size:12px; margin-bottom:20px;">SECURITY CHECK</div>
+        <input type="email" id="log-email" placeholder="MOD EMAIL">
+        <input type="password" id="log-pin" placeholder="ACCESS PIN">
+        <button class="btn-login" onclick="login()">AUTHENTICATE</button>
+        <div id="login-msg" style="color:#f55; font-size:10px; margin-top:10px;"></div>
+    </div>
+</div>
+
+<div id="dashboard-content">
+    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px;">
+        <span style="color:var(--blue); font-family:'Press Start 2P'; font-size:12px;">X-ADMIN</span>
+        <span id="user-badge" style="font-size:10px; color:#888;"></span>
+    </div>
+
+    <div style="text-align: center; margin: 10px 0;">
+        <span id="status-badge" style="background:#333; padding:5px 10px; font-size:10px; color:#fff;">OFFLINE</span>
+    </div>
+
+    <div class="monitor-grid">
+        <div class="card" style="border-top:3px solid var(--blue);">
+            <div style="font-size:10px; color:#888;">OPCIÓN A</div>
+            <span class="card-val" style="color:var(--blue);" id="total-a">0</span>
+            <span id="lbl-a" style="font-size:12px;">---</span>
+        </div>
+        <div class="card" style="border-top:3px solid var(--red);">
+            <div style="font-size:10px; color:#888;">OPCIÓN B</div>
+            <span class="card-val" style="color:var(--red);" id="total-b">0</span>
+            <span id="lbl-b" style="font-size:12px;">---</span>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div style="font-family:'Press Start 2P'; font-size:10px; color:#666; margin-bottom:10px;">/// CONFIGURACIÓN</div>
+        <input type="text" id="in-tit" placeholder="PREGUNTA">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="text" id="in-a" value="SI">
+            <input type="text" id="in-b" value="NO">
+        </div>
+        <button class="btn-start" onclick="cmd('admin_crear')">1. INICIAR APUESTA</button>
+    </div>
+
+    <div class="control-panel" style="border-color:#555;">
+        <div style="font-family:'Press Start 2P'; font-size:10px; color:#fc0; margin-bottom:10px;">/// CONTROL DE FASE</div>
+        <button class="btn-lock" onclick="cmd('admin_bloquear')">2. 🔒 CERRAR APUESTAS (BLOQUEAR)</button>
+        <div style="text-align:center; font-size:9px; color:#888; margin:5px 0;">AL BLOQUEAR NADIE PUEDE VOTAR NI CANCELAR</div>
+    </div>
+
+    <div class="control-panel">
+        <div style="font-family:'Press Start 2P'; font-size:10px; color:#666; margin-bottom:10px;">/// RESOLUCIÓN FINAL</div>
+        <div class="action-grid">
+            <button class="btn-wa" onclick="cmd('admin_cerrar', 'A')">3. GANÓ A</button>
+            <button class="btn-wb" onclick="cmd('admin_cerrar', 'B')">3. GANÓ B</button>
+        </div>
+        <button class="btn-abort" onclick="cmd('admin_anular')">⚠ ABORTAR (REEMBOLSO)</button>
+    </div>
+    
+    <div id="console" style="font-size:10px; color:#666; text-align:right;">System Ready.</div>
+</div>
+
+<script>
+    // TU ÚLTIMA URL
+    const API = "https://script.google.com/macros/s/AKfycbyWz_c4Wkxrnjy4sp0MM4GT40k2hNPfpcV9atbjTYqBdAgEAzP_ehUy4h7IUtammeSHjg/exec";
+    let AUTH = { email: "", pin: "" };
+
+    function login() {
+        const e = document.getElementById('log-email').value.trim();
+        const p = document.getElementById('log-pin').value.trim();
+        const msg = document.getElementById('login-msg');
+        msg.innerText = "Consultando...";
+        
+        fetch(API + `?accion=check_auth&email=${encodeURIComponent(e)}&pin=${encodeURIComponent(p)}`)
+        .then(r => r.json()).then(d => {
+            if (d.status === "success") {
+                AUTH = { email: e, pin: p };
+                document.getElementById('login-overlay').style.display = "none";
+                document.getElementById('dashboard-content').style.display = "grid";
+                document.getElementById('user-badge').innerText = "CMD: " + e;
+                setInterval(monitor, 3000); monitor();
+            } else { msg.innerText = "❌ DENEGADO"; }
+        }).catch(() => msg.innerText = "Error conexión (Revisa URL o Red)");
+    }
+
+    function monitor() {
+        fetch(API + "?accion=estado_apuesta").then(r=>r.json()).then(d=>{
+            if(d.status==="success") {
+                document.getElementById('total-a').innerText = d.totalA;
+                document.getElementById('total-b').innerText = d.totalB;
+                document.getElementById('lbl-a').innerText = d.opA;
+                document.getElementById('lbl-b').innerText = d.opB;
+                
+                const badge = document.getElementById('status-badge');
+                badge.innerText = d.estado;
+                if(d.estado === "ABIERTA") { badge.style.background="#060"; badge.style.color="#fff"; }
+                else if(d.estado === "BLOQUEADA") { badge.style.background="#fc0"; badge.style.color="#000"; }
+                else { badge.style.background="#333"; badge.style.color="#888"; }
+
+                if(d.estado !== "CERRADA" && document.getElementById('in-tit').value === "") {
+                    document.getElementById('in-tit').value = d.titulo;
+                    document.getElementById('in-a').value = d.opA;
+                    document.getElementById('in-b').value = d.opB;
+                }
+            }
+        });
+    }
+
+    function cmd(action, winner) {
+        if(!confirm("¿Confirmar acción?")) return;
+        const payload = {
+            accion: action, authEmail: AUTH.email, authPin: AUTH.pin,
+            titulo: document.getElementById('in-tit').value,
+            opA: document.getElementById('in-a').value, opB: document.getElementById('in-b').value,
+            ganador: winner
+        };
+        document.getElementById('console').innerText = "Enviando...";
+        fetch(API, {method:"POST", mode:"no-cors", body:JSON.stringify(payload)})
+        .then(() => {
+            document.getElementById('console').innerText = "Orden Ejecutada.";
+            if(action === "admin_cerrar" || action === "admin_anular") {
+                document.getElementById('in-tit').value = "";
+                document.getElementById('in-a').value = "SI";
+                document.getElementById('in-b').value = "NO";
+            }
+            setTimeout(monitor, 1000);
+        });
+    }
+</script>
+</body>
+</html>

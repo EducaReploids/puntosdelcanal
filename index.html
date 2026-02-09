@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-ACADEMY // HUNTER TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root { --main: #00e0ff; --sec: #ff0055; --gold: #ffcc00; --bg: #050510; --panel: rgba(0, 10, 20, 0.95); }
+        body { background-color: var(--bg); color: var(--main); font-family: 'Press Start 2P', cursive; margin: 0; padding: 10px; overflow-x: hidden; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        @media (max-width: 800px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        .cyber-box { border: 2px solid #005577; background: var(--panel); margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 224, 255, 0.1); }
+        .box-header { background: rgba(0, 34, 51, 0.8); color: #fff; padding: 10px; font-size: 10px; border-bottom: 2px solid var(--main); display: flex; justify-content: space-between; align-items: center; }
+        .box-content { padding: 15px; }
+
+        .btn { padding: 15px; border: 2px solid #fff; cursor: pointer; font-family: inherit; font-size: 12px; color: #000; width: 100%; margin-top:5px; transition: 0.1s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-a { background: var(--main); } .btn-b { background: var(--sec); } .btn-cancel { background: #ff9900; }
+        
+        .nav-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tab-btn { background: #001122; border: 1px solid #005577; color: #5588aa; padding: 12px; cursor: pointer; flex-grow: 1; font-family: inherit; font-size: 8px; }
+        .tab-btn.active { background: #005577; color: #fff; border-color: var(--main); }
+
+        /* MODALES */
+        #custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; align-items: center; justify-content: center; }
+        .modal-box { background: #000; border: 2px solid var(--gold); padding: 30px; text-align: center; max-width: 300px; box-shadow: 0 0 30px var(--gold); animation: popIn 0.3s; }
+        .modal-btn { padding: 10px 20px; margin: 10px; font-family: inherit; cursor: pointer; border: none; }
+        .btn-yes { background: var(--gold); color: #000; } .btn-no { background: #333; color: #fff; }
+
+        /* RULETA RESPONSIVE (CORREGIDO) */
+        .roulette-container { 
+            width: 100%; max-width: 100%; /* Asegura que no rompa el móvil */
+            overflow: hidden; height: 120px; 
+            background: #000; border: 4px solid #d0f; 
+            position: relative; margin-bottom: 15px; 
+            display: none; box-sizing: border-box; 
+        }
+        .roulette-strip { display: flex; height: 100%; transition: transform 5s cubic-bezier(0.1, 0.9, 0.2, 1); }
+        .roulette-item { min-width: 100px; height: 100%; border-right: 1px solid #333; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #111; }
+        .roulette-item img { width: 64px; height: 64px; object-fit: contain; }
+        .roulette-marker { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 4px; height: 100%; background: var(--gold); z-index: 10; box-shadow: 0 0 10px var(--gold); }
+
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-top: 10px; }
+        .shop-item { border: 1px solid #333; padding: 10px; text-align: center; background: rgba(255,255,255,0.05); position: relative; cursor: pointer; transition: 0.2s; }
+        .shop-item:hover { border-color: #fff; transform: translateY(-3px); }
+        .shop-item img { width: 64px; height: 64px; object-fit: contain; }
+        .shop-price { font-size: 8px; color: var(--gold); margin-top: 5px; }
+        .r-COMUN { border-bottom: 3px solid #fff; } .r-RARO { border-bottom: 3px solid var(--main); } 
+        .r-ESPECIAL { border-bottom: 3px solid #d0f; } .r-LEGENDARIO { border-bottom: 3px solid var(--gold); background: linear-gradient(180deg, rgba(0,0,0,0), rgba(255, 204, 0, 0.1)); }
+
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-card { border: 2px solid var(--main); padding: 40px; text-align: center; box-shadow: 0 0 40px var(--main); background: #050510; width: 90%; max-width: 350px; }
+        .input-yt { width: 100%; padding: 15px; background: #000; border: 1px solid #555; color: var(--gold); font-family: inherit; text-align: center; margin-bottom: 20px; box-sizing: border-box; }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .active-badge { background: var(--main); color: #000; font-size: 8px; padding: 3px; display: block; margin-top: 5px; }
+        .btn-activate { background: #0f0; border: none; color: #000; width: 100%; font-size: 8px; padding: 5px; margin-top: 5px; cursor: pointer; }
+        .logout-btn { background: transparent; border: 1px solid #f55; color: #f55; font-size: 8px; padding: 5px; cursor: pointer; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="custom-modal">
+        <div class="modal-box">
+            <div id="modal-msg" style="font-size:10px; margin-bottom:20px; line-height:1.5; color:#fff;">...</div>
+            <div id="modal-actions">
+                <button class="modal-btn btn-yes" id="btn-modal-yes">CONFIRMAR</button>
+                <button class="modal-btn btn-no" id="btn-modal-no" onclick="closeModal()">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <img src="img/ecrystal.gif" style="width:128px; margin-bottom:20px;">
+            <div style="font-size:14px; margin-bottom:10px; color:var(--gold);">X-ACADEMY TERMINAL</div>
+            <div style="font-size:8px; color:#aaa; margin-bottom:20px;">SYSTEM ACCESS REQUIRED</div>
+            <input type="text" id="yt-name-input" class="input-yt" placeholder="Tu Nombre de YouTube">
+            
+            <div id="g_id_onload" 
+                 data-client_id="209715159303-odrqec41g884dls44k4sdrb6s3c26f4k.apps.googleusercontent.com" 
+                 data-callback="handleCredentialResponse" 
+                 data-auto_prompt="false" 
+                 data-theme="filled_black">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_black" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            <div id="login-status" style="margin-top:15px; font-size:8px; color:#0f0;"></div>
+            <a href="admin_panel.html" style="display:block; margin-top:20px; color:#555; font-size:8px; text-decoration:none;">[ ADMIN PANEL ]</a>
+        </div>
+    </div>
+
+    <div class="grid-layout" id="main-ui" style="display:none;">
+        <div>
+            <div class="cyber-box">
+                <div class="box-header"><span>HUNTER ID</span> <div style="display:flex; align-items:center;"><img src="img/image.png" style="width:16px;"><button onclick="cerrarSesion()" class="logout-btn">SALIR</button></div></div>
+                <div class="box-content" style="display:flex; gap:20px; align-items:center;">
+                    <img id="user-pfp" src="" style="width:50px; height:50px; border:2px solid #fff; background:#000;">
+                    <div>
+                        <div style="font-size:12px; color:#fff;" id="display-name">...</div>
+                        <div style="font-size:14px; color:var(--gold); margin-top:5px;"><span id="display-puntos">0</span> PTS <img src="img/ecrystal.gif" style="width:16px; vertical-align:middle;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="tab-btn active" id="btn-game" onclick="switchTab('game')">MISIONES</button>
+                <button class="tab-btn" id="btn-gacha" onclick="switchTab('gacha')">GACHA</button>
+                <button class="tab-btn" id="btn-shop" onclick="switchTab('shop')">TIENDA</button>
+                <button class="tab-btn" id="btn-inv" onclick="switchTab('inv')">MOCHILA</button>
+            </div>
+
+            <div id="tab-game" class="cyber-box">
+                <div class="box-header">MISIONES ACTIVAS</div>
+                <div class="box-content">
+                    <div id="waiting-view" style="text-align:center; padding:30px; color:#555;">ESPERANDO NUEVA MISIÓN...</div>
+                    <div id="betting-view" style="display:none;">
+                        <div style="text-align:center; color:var(--gold); margin-bottom:10px;" id="bet-title">...</div>
+                        <div style="display:flex; justify-content:space-between; font-size:8px; color:#aaa; margin-bottom:5px;"><span id="label-a">OPCIÓN A</span> <span id="label-b">OPCIÓN B</span></div>
+                        <div class="versus-bar" style="display:flex; height:20px; border:2px solid #fff; margin-bottom:15px;">
+                            <div class="bar-a" id="bar-a" style="background:var(--main); width:50%;"></div>
+                            <div class="bar-b" id="bar-b" style="background:var(--sec); width:50%;"></div>
+                        </div>
+                        <div id="controls-vote" style="text-align:center;">
+                            <input type="number" id="monto" value="100" style="background:#000; color:#fff; border:1px solid #555; padding:10px; width:80px; text-align:center; margin-bottom:10px;">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"><button class="btn btn-a" onclick="apostar('A')">VOTAR A</button><button class="btn btn-b" onclick="apostar('B')">VOTAR B</button></div>
+                        </div>
+                        <div id="controls-cancel" style="display:none; text-align:center;"><button class="btn btn-cancel" onclick="cancelar()">CANCELAR APUESTA</button></div>
+                    </div>
+                    <div id="result-view" style="display:none; text-align:center; border:2px solid #0f0; padding:20px; margin-top:10px; background:rgba(0,255,0,0.1);">
+                        <div style="color:#0f0; font-size:10px; margin-bottom:5px;">MISIÓN COMPLETADA</div>
+                        <div id="res-title" style="font-size:16px; color:#fff; font-weight:bold;">...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-gacha" class="cyber-box" style="display:none;">
+                <div class="box-header">DECODIFICADOR</div>
+                <div class="box-content" style="text-align:center;">
+                    <div class="roulette-container" id="roulette-box">
+                        <div class="roulette-marker"></div>
+                        <div class="roulette-strip" id="roulette-strip"></div>
+                    </div>
+                    <div id="gacha-controls">
+                        <img src="img/extras.gif" style="width:80px; margin-bottom:15px;">
+                        <div style="font-size:10px; color:#aaa; margin-bottom:15px;">COSTO: 800 PTS</div>
+                        <button class="btn" style="border-color:#d0f; color:#d0f;" onclick="startGacha()">INICIAR DECODIFICACIÓN</button>
+                    </div>
+                    <div id="gacha-claim" style="display:none; animation: popIn 0.5s;">
+                        <div style="font-size:12px; color:#fff; margin-bottom:10px;">¡ITEM OBTENIDO!</div>
+                        <img id="won-item-img" src="" style="width:64px; margin-bottom:10px;">
+                        <div id="won-item-name" style="color:var(--gold); font-size:14px; margin-bottom:15px;">...</div>
+                        <button class="btn" onclick="claimGacha()">RECLAMAR Y GUARDAR</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-shop" class="cyber-box" style="display:none;">
+                <div class="box-header">TIENDA DIRECTA</div>
+                <div class="box-content">
+                    <div style="font-size:8px; color:#aaa; margin-bottom:10px; text-align:center;">HAZ CLIC EN UN ITEM PARA COMPRARLO</div>
+                    <div id="shop-container" class="shop-grid"></div>
+                </div>
+            </div>
+
+            <div id="tab-inv" class="cyber-box" style="display:none;">
+                <div class="box-header">INVENTARIO</div>
+                <div class="box-content">
+                    <div style="color:var(--gold); font-size:10px; margin-bottom:5px;">EQUIPADO:</div>
+                    <div id="inv-active" class="shop-grid"></div>
+                    <div style="color:#aaa; font-size:10px; margin-top:20px; margin-bottom:5px;">EN STOCK:</div>
+                    <div id="inv-pending" class="shop-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="cyber-box"><div class="box-header">E-TANK</div><div class="box-content"><div style="border:2px solid #fff; height:20px; background:#000;"><div id="energy-bar" style="height:100%; width:0%; background:var(--gold);"></div></div></div></div>
+            <div class="cyber-box"><div class="box-header">LOGS</div><div class="box-content"><div id="console" style="height:150px; overflow-y:auto; font-size:8px; color:#aaa;"></div></div></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
