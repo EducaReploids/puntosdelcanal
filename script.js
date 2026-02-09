@@ -1,4 +1,4 @@
-const API = "https://script.google.com/macros/s/AKfycbyWz_c4Wkxrnjy4sp0MM4GT40k2hNPfpcV9atbjTYqBdAgEAzP_ehUy4h7IUtammeSHjg/exec";
+const API = "https://script.google.com/macros/s/AKfycbzkN6gTmMisOFOZxL64vrYThvo9CFkq0hN-3Du_X6XcdSny7XjeGvFZ2MDEz5xdHN0Mcw/exec";
 
 const CATALOGO = [
     {id:"x_aah", name:"X Grito", rank:"COMUN", img:"img/X_aah.png", precio:500},
